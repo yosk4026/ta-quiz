@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テクニカルアナリスト一次試験 〇×演習</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8;
+    --ok:#22c55e; --ng:#ef4444; --maru:#f59e0b; --batsu:#60a5fa;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;
+    line-height:1.7;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:16px;}
+  header{text-align:center;padding:18px 8px 6px;}
+  header h1{font-size:1.25rem;margin:0 0 4px;}
+  header p{margin:0;color:var(--muted);font-size:.85rem;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0;}
+  .btn{
+    display:block;width:100%;border:none;border-radius:12px;padding:14px;
+    font-size:1rem;font-weight:700;cursor:pointer;margin:8px 0;color:#0b1220;
+    transition:transform .05s, filter .15s;
+  }
+  .btn:active{transform:scale(.99);}
+  .btn.primary{background:var(--accent);}
+  .btn.sub{background:var(--panel2);color:var(--txt);border:1px solid var(--line);}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .modes{display:grid;gap:10px;margin-top:8px;}
+  /* quiz */
+  .topbar{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:var(--muted);margin-bottom:6px;}
+  .bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-bottom:14px;}
+  .bar > i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s;}
+  .tag{display:inline-block;font-size:.72rem;background:var(--panel2);color:var(--accent);
+    border:1px solid var(--line);border-radius:99px;padding:2px 10px;margin-bottom:10px;}
+  .qtext{font-size:1.12rem;font-weight:600;margin:6px 0 18px;min-height:3em;}
+  .ox{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .ox button{
+    border:none;border-radius:14px;padding:22px 0;font-size:1.8rem;font-weight:800;cursor:pointer;
+    color:#0b1220;transition:transform .05s, filter .15s;
+  }
+  .ox .maru{background:var(--maru);}
+  .ox .batsu{background:var(--batsu);}
+  .ox button:active{transform:scale(.97);}
+  .ox button:disabled{opacity:.45;cursor:default;}
+  .judge{font-size:1.3rem;font-weight:800;text-align:center;margin:12px 0 4px;}
+  .judge.ok{color:var(--ok);}
+  .judge.ng{color:var(--ng);}
+  .exp{background:var(--panel2);border-radius:12px;padding:14px;margin-top:10px;font-size:.95rem;}
+  .exp b{color:var(--accent);}
+  .ans-line{font-weight:700;margin-bottom:6px;}
+  .hidden{display:none;}
+  /* result */
+  .score{font-size:2.4rem;font-weight:800;text-align:center;color:var(--accent);}
+  .score small{display:block;font-size:.9rem;color:var(--muted);font-weight:400;margin-top:4px;}
+  .review-item{border-top:1px solid var(--line);padding:12px 0;font-size:.9rem;}
+  .review-item .qq{font-weight:600;}
+  .review-item .meta{font-size:.78rem;color:var(--muted);margin-top:4px;}
+  .wrong{color:var(--ng);} .right{color:var(--ok);}
+  footer{text-align:center;color:var(--muted);font-size:.72rem;padding:20px 0 30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>テクニカルアナリスト一次試験 〇×演習</h1>
+    <p>全100問・即時正誤＋解説つき</p>
+  </header>
+
+  <!-- スタート -->
+  <div id="home" class="card">
+    <p style="color:var(--muted);font-size:.9rem;margin-top:0;">出題範囲：ダウ理論／トレンド／移動平均／ローソク足／オシレーター（RSI・MACD・ストキャス等）／一目均衡表／ボリンジャーバンド／出来高／パターン分析／P&amp;F・新値足／エリオット・フィボナッチ／統計基礎</p>
+    <div class="modes">
+      <button class="btn primary" onclick="start('seq')">① 全100問を順番に解く</button>
+      <button class="btn sub" onclick="start('rand')">② ランダム出題（シャッフル）</button>
+      <button class="btn sub" onclick="start('rand20')">③ ミニテスト 20問（ランダム）</button>
+      <button class="btn sub" id="wrongBtn" onclick="start('wrong')">④ 前回間違えた問題だけ</button>
+    </div>
+  </div>
+
+  <!-- クイズ -->
+  <div id="quiz" class="card hidden">
+    <div class="topbar">
+      <span id="counter">1 / 100</span>
+      <span id="liveScore">正解 0</span>
+    </div>
+    <div class="bar"><i id="prog"></i></div>
+    <span class="tag" id="cat">カテゴリ</span>
+    <div class="qtext" id="qtext">問題文</div>
+    <div class="ox">
+      <button class="maru" id="bMaru" onclick="answer(true)">〇</button>
+      <button class="batsu" id="bBatsu" onclick="answer(false)">×</button>
+    </div>
+    <div id="feedback" class="hidden">
+      <div class="judge" id="judge"></div>
+      <div class="exp">
+        <div class="ans-line" id="ansLine"></div>
+        <div id="expText"></div>
+      </div>
+      <button class="btn primary" id="nextBtn" onclick="next()">次の問題 ▶</button>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="card hidden">
+    <div class="score" id="finalScore">0 / 0
+      <small id="finalPct"></small>
+    </div>
+    <button class="btn primary" onclick="location.reload()">トップに戻る</button>
+    <button class="btn sub" id="retryWrong" onclick="start('wrong')">間違えた問題を解き直す</button>
+    <div id="reviewList"></div>
+  </div>
+
+  <footer>奥様の合格を応援しています。学習用の自作演習ツールです（正答は各自テキストでご確認ください）。</footer>
+</div>
+
+<script>
+/* ===== 問題データ：a=true は正答が〇、a=false は正答が× ===== */
+const QUESTIONS = [
+/* ダウ理論・トレンド */
+{c:"ダウ理論",q:"ダウ理論では、トレンドは「主要（長期）」「二次（中期）」「小（短期）」の3つに分類される。",a:true,e:"ダウ理論の基本。主要トレンドは1年以上、二次トレンドはその調整、小トレンドは数日〜3週間程度の動きとされる。"},
+{c:"ダウ理論",q:"ダウ理論では、出来高はトレンドを確認する補助材料であり、価格は出来高を伴って動くべきとされる。",a:true,e:"6つの基本法則の一つ。トレンド方向への動きでは出来高が増加し、逆行時には減少するのが理想とされる。"},
+{c:"ダウ理論",q:"ダウ理論では、明確な転換シグナルが出るまで、現行のトレンドは継続するとみなす。",a:true,e:"「トレンドは明確な転換シグナルが出るまで継続する」が基本法則。慣性の法則のように扱われる。"},
+{c:"ダウ理論",q:"ダウ理論では、トレンドの確認には主要な2つの平均（指数）が互いに確認し合う必要があるとされる。",a:true,e:"元来は工業株平均と鉄道株平均が同方向に動くことでトレンドを確認するという「相互確認の原則」がある。"},
+{c:"ダウ理論",q:"上昇トレンドとは、高値も安値も切り下がっていく状態のことをいう。",a:false,e:"上昇トレンドは高値・安値がともに切り上がる状態。高値も安値も切り下がるのは下降トレンド。"},
+{c:"トレンド",q:"レジスタンスライン（抵抗線）を上にブレイクすると、そのラインは今度はサポート（支持線）として機能しやすい。",a:true,e:"サポートとレジスタンスの役割転換（ロールリバーサル）。ブレイク後に上下の役割が入れ替わる。"},
+{c:"トレンド",q:"トレンドラインは、上昇トレンドでは安値同士、下降トレンドでは高値同士を結んで引く。",a:true,e:"上昇は下値支持の安値結び、下降は上値抵抗の高値結びが基本。"},
+{c:"トレンド",q:"一般に、トレンドラインに接する回数が多いほど、そのラインの信頼性は低いとされる。",a:false,e:"逆。接触回数が多く、期間が長いトレンドラインほど信頼性は高いとされる。"},
+{c:"トレンド",q:"保ち合い（もみ合い）を上下どちらかにブレイクすることを「放れ」という。",a:true,e:"レンジから抜けることを放れ（ブレイクアウト）といい、新たなトレンド発生の手掛かりとされる。"},
+
+/* 移動平均線 */
+{c:"移動平均線",q:"単純移動平均（SMA）は、対象期間の終値を合計し期間数で割って算出する。",a:true,e:"SMAは終値の単純平均。最も基本的な移動平均線。"},
+{c:"移動平均線",q:"指数平滑移動平均（EMA）は、直近の価格により大きな比重を置いて計算する。",a:true,e:"EMAは新しいデータほど重みを大きくするため、SMAより値動きへの反応が速い。"},
+{c:"移動平均線",q:"ゴールデンクロスとは、短期移動平均線が長期移動平均線を上から下に抜けることをいう。",a:false,e:"それはデッドクロス（売りシグナル）。ゴールデンクロスは短期線が長期線を下から上に抜ける買いシグナル。"},
+{c:"移動平均線",q:"移動平均線は、価格に遅れて反応する「遅行性（ラグ）」という弱点を持つ。",a:true,e:"過去の平均を取るため、トレンド転換への反応が遅れるのが移動平均の宿命的な欠点。"},
+{c:"移動平均線",q:"グランビルの法則は、株価と移動平均線の位置関係から売買タイミングを8つに分類したものである。",a:true,e:"買い4パターン・売り4パターンの計8法則。乖離や交差を利用する。"},
+{c:"移動平均線",q:"移動平均線の期間を長くすると、線はより滑らかになりダマシは減るが、反応はより遅くなる。",a:true,e:"長期化すると平滑化されダマシ減・感度低下、短期化すると感度上昇・ダマシ増のトレードオフがある。"},
+{c:"移動平均線",q:"移動平均乖離率は、株価が移動平均線からどれだけ離れているかを百分率で示す指標である。",a:true,e:"乖離率＝(株価−移動平均)÷移動平均×100。買われ過ぎ・売られ過ぎの判断に使う。"},
+{c:"移動平均線",q:"加重移動平均（WMA）は、すべての期間のデータに等しい重みを与えて算出する。",a:false,e:"等しい重みはSMA。WMAは直近データほど大きい重みを線形に与える。"},
+{c:"移動平均線",q:"複数の移動平均線が収束した後に拡散していく現象は、新たなトレンド発生のサインとされることがある。",a:true,e:"線の収束はエネルギー蓄積、その後の拡散（パーフェクトオーダー化）はトレンド発生の手掛かり。"},
+{c:"移動平均線",q:"短期・中期・長期の移動平均線が上から順に並ぶ状態を、上昇トレンドのパーフェクトオーダーという。",a:true,e:"上から短期→中期→長期の順で並び、すべて上向きの状態。強い上昇トレンドのサイン。"},
+
+/* ローソク足 */
+{c:"ローソク足",q:"陽線とは、終値が始値より高いローソク足のことである。",a:true,e:"陽線＝終値＞始値（上昇）、陰線＝終値＜始値（下落）。"},
+{c:"ローソク足",q:"ローソク足の実体から上下に伸びる線を「ヒゲ（影）」といい、上ヒゲはその期間の高値を示す。",a:true,e:"上ヒゲの先端が高値、下ヒゲの先端が安値を表す。"},
+{c:"ローソク足",q:"「大陽線」は下落の勢いが強いことを示す弱気のサインである。",a:false,e:"大陽線は買いの勢いが強い強気のサイン。弱気を示すのは大陰線。"},
+{c:"ローソク足",q:"安値圏で長い下ヒゲをもつローソク足（カラカサ／ハンマー）が出現すると、下げ止まり・反転のサインとされることがある。",a:true,e:"長い下ヒゲは一度大きく売られた後に買い戻されたことを示し、安値圏では反転を示唆する。"},
+{c:"ローソク足",q:"「包み線（抱き線）」とは、前日のローソク足の実体を当日の実体がすべて包み込む形をいう。",a:true,e:"エンゴルフィング。安値圏での陽の包み線は買い転換、高値圏での陰の包み線は売り転換のサイン。"},
+{c:"ローソク足",q:"始値と終値がほぼ同値で実体がほとんどないローソク足を「十字線（同事線・寄引同事）」という。",a:true,e:"十字線は買いと売りが拮抗した迷いを示し、トレンドの転換点で出やすい。"},
+{c:"ローソク足",q:"「三空踏み上げ」は、買われ過ぎ・天井圏を示唆し、利食い売りを検討するサインとされる。",a:true,e:"酒田五法。連続して窓を空けて上昇した三空は過熱を示し、反落に注意する局面。"},
+{c:"ローソク足",q:"酒田五法には「三山」「三川」「三空」「三兵」「三法」がある。",a:true,e:"いずれも本間宗久に由来するとされる古典的なローソク足分析の型。"},
+{c:"ローソク足",q:"「赤三兵」は陽線が3本連続で右肩上がりに並ぶ形で、上昇への転換・上昇継続を示す強気のサインである。",a:true,e:"赤三兵（三兵）は陽線3本が連続して上がる強気サイン。安値圏で出れば反転、上昇途中なら継続を示す。"},
+{c:"ローソク足",q:"「明けの明星（三つ星）」は、下落後に小さな実体（十字星）を挟んで陽線が出る、底入れ反転のサインである。",a:true,e:"大陰線→小実体（窓）→大陽線の3本で底打ちを示す。天井側は「宵の明星」。"},
+
+/* オシレーター */
+{c:"オシレーター",q:"RSIは0〜100の範囲で推移し、一般に70%以上で買われ過ぎ、30%以下で売られ過ぎと判断される。",a:true,e:"RSI（相対力指数）はワイルダーが考案。70/30が代表的な過熱判定の目安。"},
+{c:"オシレーター",q:"RSIは、一定期間の値上がり幅の合計を、値上がり幅と値下がり幅の合計で割って算出する。",a:true,e:"RSI＝上昇幅合計÷(上昇幅合計＋下落幅合計)×100。"},
+{c:"オシレーター",q:"オシレーター系指標は、明確なトレンドが出ている相場よりも、保ち合い（レンジ）相場で有効とされる。",a:true,e:"逆張り的なオシレーターはレンジで威力を発揮し、強いトレンド下では張り付いてダマシが増える。"},
+{c:"オシレーター",q:"ストキャスティクスの%Dは、%Kよりも値動きに対して敏感（速い）線である。",a:false,e:"逆。%Kが速い線、%Dは%Kを平滑化した遅い線。SlowストキャスではSlow%Kがさらに平滑化される。"},
+{c:"オシレーター",q:"MACDは、短期EMAから長期EMAを引いた値（MACD線）と、その移動平均（シグナル線）で構成される。",a:true,e:"MACD＝短期EMA−長期EMA。MACD線がシグナル線を上抜けると買いとされる。"},
+{c:"オシレーター",q:"MACDはトレンド系とオシレーター系の両方の性格を併せ持つ指標とされる。",a:true,e:"移動平均ベースでトレンドを捉えつつ、ゼロラインやヒストグラムで過熱・転換も読める。"},
+{c:"オシレーター",q:"価格が高値を更新しているのにオシレーターは高値を切り下げる状態を「ダイバージェンス（逆行現象）」といい、転換の前兆とされる。",a:true,e:"価格とオシレーターの逆行はトレンドの勢いの衰えを示し、反転シグナルとして重視される。"},
+{c:"オシレーター",q:"サイコロジカルラインは、一定期間のうち値上がりした日数の割合を示す指標である。",a:true,e:"例：12日中9日上昇なら75%。75%以上で買われ過ぎ、25%以下で売られ過ぎが目安。"},
+{c:"オシレーター",q:"RCI（順位相関指数）は、日付と価格それぞれの順位の相関を用いて−100〜+100で示す。",a:true,e:"+100に近いほど上昇基調、−100に近いほど下落基調。スピアマンの順位相関を応用。"},
+{c:"オシレーター",q:"モメンタムは、当日の価格から一定期間前の価格を引くなどして、価格変化の勢いを示す指標である。",a:true,e:"モメンタム＝当日終値−n日前終値。ゼロラインの上下や傾きで勢いを判断する。"},
+{c:"オシレーター",q:"DMI（方向性指数）の+DIが−DIを上回っている状態は、上昇の方向性が強いことを示す。",a:true,e:"+DI＞−DIで上昇優勢、−DI＞+DIで下降優勢。ADXはその方向性の強さを示す。"},
+{c:"オシレーター",q:"ADXの数値が上昇しているときは、トレンドの方向性が弱まっていることを示す。",a:false,e:"逆。ADX上昇＝トレンドが強い、ADX低下＝トレンドが弱い（方向感なし）を示す。"},
+{c:"オシレーター",q:"RSIが買われ過ぎ水準にあっても、強い上昇トレンドでは高水準に張り付いたまま上昇が続くことがある。",a:true,e:"トレンド相場ではオシレーターのダマシが増える典型。過熱＝即反転ではない点が注意。"},
+{c:"オシレーター",q:"ストキャスティクスは、直近の終値が一定期間の高値・安値レンジの中でどの位置にあるかを示す。",a:true,e:"%K＝(終値−期間安値)÷(期間高値−期間安値)×100。レンジ内の相対位置を測る。"},
+{c:"オシレーター",q:"ウィリアムズ%Rは0〜100の範囲で示され、値が大きいほど売られ過ぎを示す。",a:false,e:"%Rは0〜−100（または0〜100表記）。一般に0近辺が買われ過ぎ、−100近辺が売られ過ぎで、設問の説明は逆。"},
+
+/* 一目均衡表 */
+{c:"一目均衡表",q:"一目均衡表は、転換線・基準線・先行スパン1・先行スパン2・遅行スパンの5本の線で構成される。",a:true,e:"一目山人（細田悟一）が考案。5本の線と「雲」で時間・値幅・波動を分析する。"},
+{c:"一目均衡表",q:"基準線は過去9日間の高値と安値の中値で計算する。",a:false,e:"9日の中値は転換線。基準線は過去26日間の高値と安値の中値。"},
+{c:"一目均衡表",q:"先行スパン1と先行スパン2に挟まれた領域を「雲（抵抗帯）」という。",a:true,e:"雲は支持帯・抵抗帯として機能し、価格が雲を抜けると相場の強弱が転換しやすい。"},
+{c:"一目均衡表",q:"遅行スパンは、当日の終値を26日前にさかのぼってプロットした線である。",a:true,e:"遅行スパンが過去の価格（ローソク足）を上抜けると買い、下抜けると売りのサインとされる。"},
+{c:"一目均衡表",q:"転換線が基準線を下から上に抜けることを「好転」といい、買いシグナルとされる。",a:true,e:"転換線＞基準線が好転（買い）、転換線＜基準線が逆転（売り）。"},
+{c:"一目均衡表",q:"一目均衡表では、価格（値幅）よりも「時間」の概念を重視する。",a:true,e:"基本数値（9・17・26など）に代表されるように、相場の転換時期＝時間論を最重要とする。"},
+{c:"一目均衡表",q:"価格が雲の上にあるときは弱気、雲の下にあるときは強気と判断する。",a:false,e:"逆。雲の上＝強気（雲が支持帯）、雲の下＝弱気（雲が抵抗帯）。"},
+{c:"一目均衡表",q:"一目均衡表の「三役好転」は、転換線が基準線を上抜け・遅行スパンが価格を上抜け・価格が雲の上、の3条件が揃った強い買いサインである。",a:true,e:"三役好転は最も強い買い、三役逆転は最も強い売りのシグナルとされる。"},
+
+/* ボリンジャーバンド */
+{c:"ボリンジャーバンド",q:"ボリンジャーバンドは、移動平均線とその上下に標準偏差（σ）を加減したバンドで構成される。",a:true,e:"中心線（移動平均）±σ、±2σ、±3σを描き、価格のばらつきを可視化する。"},
+{c:"ボリンジャーバンド",q:"統計的に、価格が±2σの範囲内に収まる確率はおよそ95%とされる。",a:true,e:"正規分布の前提で±1σ約68%、±2σ約95%、±3σ約99.7%。"},
+{c:"ボリンジャーバンド",q:"バンドの幅が狭くなる「スクイーズ」は、ボラティリティが低下している状態を示す。",a:true,e:"スクイーズはエネルギー蓄積期。その後のバンド拡大（エクスパンション）でトレンドが発生しやすい。"},
+{c:"ボリンジャーバンド",q:"考案者ジョン・ボリンジャーは、±2σにタッチしたら即逆張りする手法を主目的として推奨している。",a:false,e:"ボリンジャー本人はバンド逆張りより、バンドウォークなど順張り的な使い方を重視している。逆張り専用は誤解。"},
+{c:"ボリンジャーバンド",q:"強いトレンドが出ると、価格が±2σ付近に沿って動き続ける「バンドウォーク」が起こることがある。",a:true,e:"バンドウォークはトレンドが強いことの表れで、安易な逆張りは危険とされる。"},
+{c:"ボリンジャーバンド",q:"バンドが大きく広がる「エクスパンション」は、ボラティリティの拡大を示す。",a:true,e:"エクスパンションは変動率の急拡大。トレンド発生・加速の局面で見られる。"},
+
+/* 出来高 */
+{c:"出来高",q:"OBV（オン・バランス・ボリューム）は、株価上昇日の出来高を加算し、下落日の出来高を減算して累計する指標である。",a:true,e:"グランビル考案。価格に先行して出来高で資金の流出入を測る。"},
+{c:"出来高",q:"一般に、株価上昇局面では出来高も増加するのが健全とされる。",a:true,e:"価格と出来高が同方向に増えるのがトレンドの裏付け。上昇なのに出来高細るのは勢い減退のサイン。"},
+{c:"出来高",q:"価格帯別出来高は、どの価格帯で多くの売買が成立したかを示し、しこり（戻り売り圧力）の分析に使われる。",a:true,e:"出来高が多い価格帯は支持・抵抗になりやすく、上値のしこり解消の目安になる。"},
+{c:"出来高",q:"出来高はテクニカル分析において価格より重要度が高く、単独で売買判断の主指標とされる。",a:false,e:"出来高はあくまで価格の動きを確認・裏付ける補助指標。単独で主指標にするのは一般的でない。"},
+{c:"出来高",q:"天井圏で出来高が急増した後に価格が伸び悩む「セリングクライマックス／買いの過熱」は、転換の警戒サインになりうる。",a:true,e:"極端な出来高急増は需給の最終局面（クライマックス）を示し、トレンド転換の前兆となることがある。"},
+{c:"出来高",q:"信用取引の取り組み（信用倍率）は需給分析の材料であり、信用買い残が多いと将来の戻り売り圧力（しこり）になりやすい。",a:true,e:"買い残はいずれ反対売買が必要なため上値の重し（潜在的売り圧力）となる。"},
+
+/* パターン分析 */
+{c:"パターン分析",q:"ヘッドアンドショルダーズ・トップ（三尊天井）は、代表的な下落転換パターンである。",a:true,e:"左肩・頭・右肩の3つの山。ネックライン割れで売りサインとなる。"},
+{c:"パターン分析",q:"ダブルボトム（二重底）は、天井圏で現れる下落転換のパターンである。",a:false,e:"ダブルボトムは安値圏で現れる上昇転換パターン。天井圏の転換はダブルトップ。"},
+{c:"パターン分析",q:"ヘッドアンドショルダーズで、ネックラインを割り込んだ後の下値目標は、頭からネックラインまでの値幅をネックラインから差し引いて測る。",a:true,e:"パターンの高さ（頭〜ネック）を下に投影するのが一般的な目標値の算出法。"},
+{c:"パターン分析",q:"三角保ち合い（トライアングル）は、上値抵抗線と下値支持線が収束していく形である。",a:true,e:"値動きの幅が次第に狭まり、どちらかにブレイクして新たなトレンドが出る。"},
+{c:"パターン分析",q:"「フラッグ」や「ペナント」は、急騰・急落後の短い保ち合いで、多くは元のトレンドが継続する継続パターンである。",a:true,e:"トレンド途中の小休止。放れた方向（多くは従来方向）に再び動き出す。"},
+{c:"パターン分析",q:"カップ・ウィズ・ハンドルは、下落転換を示す代表的なパターンである。",a:false,e:"カップ・ウィズ・ハンドルは上昇継続・上放れを示す強気の継続パターン。"},
+{c:"パターン分析",q:"ソーサー（受け皿型）ボトムは、長期間かけて緩やかに底を打つ反転パターンである。",a:true,e:"なだらかなお椀型の底。出来高もU字を描くことが多く、底入れを示す。"},
+{c:"パターン分析",q:"上昇トレンド中のV字反転は、徐々に時間をかけて転換する穏やかなパターンである。",a:false,e:"V字反転（スパイク）は急騰・急落で短時間に鋭く転換する激しいパターン。穏やかなのはソーサー型。"},
+
+/* P&F・新値足・カギ足 */
+{c:"特殊チャート",q:"ポイント・アンド・フィギュア（P&F）は、時間の概念を持たず、一定以上の値動きがあったときだけ記録するチャートである。",a:true,e:"上昇を×、下落を○で表し、横軸は時間ではなく転換の回数。時間を排除して値幅に注目する。"},
+{c:"特殊チャート",q:"P&Fでは、一定の転換幅（リバーサル）を満たさない逆方向の値動きは、新しい列に記入しない。",a:true,e:"枠（マス目）と転換幅のルールで微細なノイズを排除する仕組み。"},
+{c:"特殊チャート",q:"新値足（しんねあし）は、過去n本の高値・安値を更新したときだけ新しい足を描く時間軸不問のチャートである。",a:true,e:"代表は三本新値足。陽転・陰転でトレンドの転換を捉える。微動を切り捨ててトレンドを明確化する。"},
+{c:"特殊チャート",q:"カギ足は、一定の値幅以上の逆行があったときに線を折り返して描き、時間ではなく値動きで作図する。",a:true,e:"上昇は上、下落は下に線を伸ばし、転換時に直角（カギ）に折れる。陽転・陰転で売買を判断。"},
+{c:"特殊チャート",q:"練行足（れんこうあし）は、あらかじめ決めた一定の値幅（レンガ）ごとに足を描き、ノイズを除去してトレンドを見やすくする。",a:true,e:"一定値幅未満の値動きは無視されるため、トレンドの方向が把握しやすい。"},
+{c:"特殊チャート",q:"P&Fや新値足の長所は、ザラ場の細かな値動き（ノイズ）を捨ててトレンドを明確にできる点にある。",a:true,e:"時間や微動を切り捨てることで、トレンドの方向と転換に集中できるのが特殊チャート共通の利点。"},
+
+/* エリオット・フィボナッチ・サイクル */
+{c:"エリオット波動",q:"エリオット波動理論では、上昇局面は5つの波（推進波）、調整局面は3つの波（修正波）で構成されるとする。",a:true,e:"5波上昇＋3波下降の計8波で1サイクル。推進波（1〜5）と修正波（A・B・C）。"},
+{c:"エリオット波動",q:"エリオット波動の推進5波のうち、第2波と第4波は調整（押し・戻り）の波である。",a:true,e:"推進波の中でも2波・4波は調整、1・3・5波が上昇方向の波。第3波が最も力強いことが多い。"},
+{c:"フィボナッチ",q:"フィボナッチ・リトレースメントでよく使われる戻りの比率には、38.2%・50%・61.8%がある。",a:true,e:"フィボナッチ数列に由来する黄金比から導かれる代表的な押し・戻りの目安。"},
+{c:"フィボナッチ",q:"フィボナッチ数列では、各項が直前の2項の和になっており（1,1,2,3,5,8,13…）、隣り合う数の比は黄金比（約1.618）に収束する。",a:true,e:"前項÷後項≒0.618、後項÷前項≒1.618。これが38.2%・61.8%など各種フィボナッチ比率の基礎。"},
+{c:"サイクル",q:"サイクル理論は、相場の高値や安値が一定の時間的周期で繰り返し出現する傾向に着目する分析である。",a:true,e:"日柄（時間）に注目し、底〜底、天井〜天井の周期で転換時期を推測する。"},
+{c:"サイクル",q:"「酒田罫線法」はサイクル理論の一種であり、時間の周期のみで売買タイミングを判断する。",a:false,e:"酒田罫線法はローソク足（酒田五法）に基づく型・形状の分析であり、時間周期のみのサイクル理論ではない。"},
+{c:"エリオット波動",q:"エリオット波動には、波の中にさらに小さな同じ構造の波が含まれる「フラクタル（自己相似）」性がある。",a:true,e:"大きな波も小さな波も同じ5−3構造を内包する入れ子（フラクタル）構造を持つとされる。"},
+
+/* 統計・基礎 */
+{c:"統計基礎",q:"標準偏差は、データのばらつき（散らばりの大きさ）を表す統計量である。",a:true,e:"標準偏差が大きいほどボラティリティ（変動）が大きい。ボリンジャーバンドの基礎。"},
+{c:"統計基礎",q:"相関係数は−1から+1の範囲をとり、+1に近いほど2つの変数は同方向に強く連動する。",a:true,e:"+1＝完全正の相関、−1＝完全負の相関、0＝無相関。資産間の連動性分析に使う。"},
+{c:"統計基礎",q:"2つの資産の相関係数が−1に近いとき、それらは同じ方向に動く傾向が強い。",a:false,e:"−1に近いと逆方向に動く（負の相関）。同方向は+1に近いとき。"},
+{c:"統計基礎",q:"回帰分析における回帰直線は、データとの誤差（残差）が最小になるように引かれる。",a:true,e:"最小二乗法により残差平方和を最小化する直線を求める。トレンドの傾き分析にも応用。"},
+{c:"統計基礎",q:"正規分布では、平均値・中央値・最頻値が一致し、左右対称の釣鐘型になる。",a:true,e:"理想的な正規分布の性質。±1σで約68%が収まる。"},
+{c:"統計基礎",q:"ボラティリティ（変動率）が高いほど、価格変動のリスクは小さいといえる。",a:false,e:"ボラティリティが高い＝値動きが大きい＝リスクが大きい。逆の記述。"},
+{c:"統計基礎",q:"分散は標準偏差を2乗した値である。",a:false,e:"逆。標準偏差は分散の平方根（√分散）。分散＝標準偏差の2乗。"},
+
+/* 総合・考え方 */
+{c:"総合",q:"テクニカル分析は、過去の価格や出来高などの市場データから将来の値動きを予測しようとする手法である。",a:true,e:"「市場の動きはすべてを織り込む」「価格はトレンドを形成する」「歴史は繰り返す」が3大前提。"},
+{c:"総合",q:"ファンダメンタルズ分析は企業業績や経済指標を、テクニカル分析は値動きそのものを主に分析対象とする。",a:true,e:"両者は対象が異なり、補完的に用いられることも多い。"},
+{c:"総合",q:"「ダマシ（フェイク）」とは、シグナル通りに価格が動かず逆行してしまう現象のことである。",a:true,e:"どの指標にもダマシは存在する。複数指標の併用やトレンド確認でダマシを減らす工夫が必要。"},
+{c:"総合",q:"トレンド系指標とオシレーター系指標を組み合わせると、互いの弱点を補える場合がある。",a:true,e:"トレンド系はレンジに弱く、オシレーター系はトレンドに弱い。併用で相互補完できる。"},
+{c:"総合",q:"順張り（トレンドフォロー）とは、相場の流れに逆らって反転を狙う手法のことである。",a:false,e:"順張りは流れに沿って買い・売りする手法。流れに逆らうのは逆張り。"},
+{c:"総合",q:"複数の時間軸（日足・週足・月足など）を併せて見る分析を「マルチタイムフレーム分析」という。",a:true,e:"上位足で大局のトレンドを把握し、下位足でタイミングを計るのが基本的な使い方。"},
+{c:"総合",q:"テクニカル指標のパラメータ（期間設定）は、どの銘柄・どの時間軸でも常に同じ値が最適である。",a:false,e:"対象銘柄や相場環境によって最適なパラメータは変わる。すべてに通用する万能の固定値は存在しない。"},
+{c:"総合",q:"バックテストとは、過去データを用いて売買ルールの有効性を検証することである。",a:true,e:"過去に遡ってルールを適用し成績を測る。ただし将来の成績を保証するものではない点に注意。"}
+];
+
+/* ===== ロジック ===== */
+let pool=[], idx=0, correct=0, answered=false, wrongThisRun=[];
+const WRONG_KEY="ta_wrong_v1";
+
+function getStoredWrong(){ try{return JSON.parse(localStorage.getItem(WRONG_KEY))||[];}catch(e){return [];} }
+function saveStoredWrong(arr){ localStorage.setItem(WRONG_KEY, JSON.stringify([...new Set(arr)])); }
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+window.onload=()=>{
+  const w=getStoredWrong();
+  document.getElementById('wrongBtn').textContent =
+    `④ 前回間違えた問題だけ（${w.length}問）`;
+  if(w.length===0) document.getElementById('wrongBtn').disabled=true;
+};
+
+function start(mode){
+  // インデックス付きでpoolを作る
+  const indexed = QUESTIONS.map((q,i)=>({...q,_i:i}));
+  if(mode==='seq') pool = indexed;
+  else if(mode==='rand') pool = shuffle(indexed);
+  else if(mode==='rand20') pool = shuffle(indexed).slice(0,20);
+  else if(mode==='wrong'){
+    const w=getStoredWrong();
+    pool = indexed.filter(q=>w.includes(q._i));
+    pool = shuffle(pool);
+    if(pool.length===0){ alert("間違えた問題はありません。"); return; }
+  }
+  idx=0; correct=0; wrongThisRun=[];
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('result').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  render();
+}
+
+function render(){
+  answered=false;
+  const q=pool[idx];
+  document.getElementById('counter').textContent=`${idx+1} / ${pool.length}`;
+  document.getElementById('liveScore').textContent=`正解 ${correct}`;
+  document.getElementById('prog').style.width=`${(idx)/pool.length*100}%`;
+  document.getElementById('cat').textContent=q.c;
+  document.getElementById('qtext').textContent=q.q;
+  document.getElementById('feedback').classList.add('hidden');
+  const bm=document.getElementById('bMaru'), bb=document.getElementById('bBatsu');
+  bm.disabled=false; bb.disabled=false;
+}
+
+function answer(userTrue){
+  if(answered) return;
+  answered=true;
+  const q=pool[idx];
+  const isCorrect = (userTrue===q.a);
+  document.getElementById('bMaru').disabled=true;
+  document.getElementById('bBatsu').disabled=true;
+
+  const judge=document.getElementById('judge');
+  if(isCorrect){ correct++; judge.textContent="正解！ 〇"; judge.className="judge ok"; }
+  else{ judge.textContent="不正解… ×"; judge.className="judge ng";
+    wrongThisRun.push(q._i);
+  }
+  document.getElementById('liveScore').textContent=`正解 ${correct}`;
+
+  const ans = q.a ? "正答：〇（正しい）" : "正答：×（誤り）";
+  document.getElementById('ansLine').innerHTML =
+    `<span class="${isCorrect?'right':'wrong'}">${ans}</span>`;
+  document.getElementById('expText').innerHTML = `<b>解説：</b>${q.e}`;
+  document.getElementById('feedback').classList.remove('hidden');
+  document.getElementById('prog').style.width=`${(idx+1)/pool.length*100}%`;
+}
+
+function next(){
+  idx++;
+  if(idx>=pool.length){ finish(); return; }
+  render();
+}
+
+function finish(){
+  document.getElementById('quiz').classList.add('hidden');
+  document.getElementById('result').classList.remove('hidden');
+  const pct=Math.round(correct/pool.length*100);
+  document.getElementById('finalScore').innerHTML =
+    `${correct} / ${pool.length}<small>正答率 ${pct}％</small>`;
+
+  // 間違いを保存（今回間違えた分を蓄積。全問正解のモードならその分は外す処理は簡略化）
+  const stored = new Set(getStoredWrong());
+  wrongThisRun.forEach(i=>stored.add(i));
+  // 今回出題して正解した問題はwrongから除外
+  pool.forEach(q=>{ if(!wrongThisRun.includes(q._i)) stored.delete(q._i); });
+  saveStoredWrong([...stored]);
+
+  // 復習リスト
+  const rl=document.getElementById('reviewList');
+  if(wrongThisRun.length===0){
+    rl.innerHTML=`<div class="review-item" style="border:none;color:var(--ok);font-weight:700;">全問正解！素晴らしい 🎉</div>`;
+    document.getElementById('retryWrong').classList.add('hidden');
+  }else{
+    document.getElementById('retryWrong').classList.remove('hidden');
+    let html=`<div style="margin-top:14px;font-weight:700;color:var(--ng);">間違えた問題（${wrongThisRun.length}問）</div>`;
+    wrongThisRun.forEach(i=>{
+      const q=QUESTIONS[i];
+      html+=`<div class="review-item">
+        <div class="qq">${q.q}</div>
+        <div class="meta">${q.c}｜正答：${q.a?'〇':'×'}</div>
+        <div style="margin-top:6px;font-size:.85rem;">${q.e}</div>
+      </div>`;
+    });
+    rl.innerHTML=html;
+  }
+}
+</script>
+</body>
+</html>
